@@ -100,7 +100,7 @@ class TelaInicial(QWidget):
         grid_layout.setSpacing(10)
         
         self.btn_esportes = QPushButton("⚽  Esportes e Suplementação")
-        self.btn_saude = QPushButton("💚  Saúde e Bem-estar")
+        self.btn_saude = QPushButton("🎬  Cinema")
         self.btn_tecnologia = QPushButton("💻  Tecnologia")
         self.btn_ciencia = QPushButton("🔬  Ciência")
         
@@ -164,7 +164,7 @@ class TelaInicial(QWidget):
         if self.btn_esportes.isChecked():
             temas_selecionados.append("Esportes")
         if self.btn_saude.isChecked():
-            temas_selecionados.append("Saude")
+            temas_selecionados.append("Cinema")
         if self.btn_tecnologia.isChecked():
             temas_selecionados.append("Tecnologia")
         if self.btn_ciencia.isChecked():

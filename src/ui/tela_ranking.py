@@ -107,7 +107,7 @@ class TelaRanking(QWidget):
         self.definir_dados_ranking(mock_data)
         
     def definir_dados_ranking(self, lista_jogadores):
-        """Limpa o ranking atual e desenha os novos dados recebidos do backend."""
+        """Limpa o ranking atual e desenha os novos dados recebidos."""
         # Limpar layout antigo
         while self.rows_layout.count():
             item = self.rows_layout.takeAt(0)
@@ -120,6 +120,8 @@ class TelaRanking(QWidget):
             posicao = idx + 1
             nome = jogador.get("nome", "Sem Nome")
             pontos = jogador.get("pontos", "0")
+            tempo = jogador.get("tempo", 0)
+            tempo_texto = f" • {int(tempo)}s" if tempo else ""
             
             row_frame = QFrame()
             row_frame.setObjectName("RankingRow")
@@ -158,10 +160,10 @@ class TelaRanking(QWidget):
             lbl_nome = QLabel(nome)
             lbl_nome.setStyleSheet("font-size: 13px; font-weight: 600; color: #1E293B;")
             
-            lbl_pont = QLabel(pontos)
+            lbl_pont = QLabel(f"{pontos}{tempo_texto}")
             lbl_pont.setStyleSheet("font-size: 13px; font-weight: bold; color: #2563EB;")
             lbl_pont.setAlignment(Qt.AlignRight)
-            lbl_pont.setFixedWidth(100)
+            lbl_pont.setFixedWidth(140)
             
             row_layout.addWidget(lbl_pos)
             row_layout.addWidget(lbl_nome)

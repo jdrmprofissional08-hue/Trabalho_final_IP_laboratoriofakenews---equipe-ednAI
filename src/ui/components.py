@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QWidget, QLabel, QVBoxLayout
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush
+from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QWidget, QSizePolicy
+from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPixmap
 from PySide6.QtCore import Qt, QSize
 
 def apply_shadow(widget, blur=15, offset=(0, 4), opacity=20):
@@ -25,15 +25,33 @@ class ImagePlaceholder(QWidget):
     def __init__(self, text="IMAGEM DA POSTAGEM", parent=None):
         super().__init__(parent)
         self.text = text
-        self.setMinimumHeight(180)
+        self.image_path = ""
+        self.setMinimumHeight(260)
+        self.setMaximumHeight(320)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        
-        # Fundo do placeholder (cinza claro suave)
         rect = self.rect()
         painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(QColor("#F8FAFC")))
+        painter.drawRoundedRect(rect, 8, 8)
+
+        if self.image_path:
+            pixmap = QPixmap(self.image_path)
+            if not pixmap.isNull():
+                scaled = pixmap.scaled(
+                    self.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                x = (self.width() - scaled.width()) // 2
+                y = (self.height() - scaled.height()) // 2
+                painter.drawPixmap(x, y, scaled)
+                return
+        
+        # Fundo do placeholder (cinza claro suave)
         painter.setBrush(QBrush(QColor("#F1F5F9")))
         painter.drawRoundedRect(rect, 8, 8)
         

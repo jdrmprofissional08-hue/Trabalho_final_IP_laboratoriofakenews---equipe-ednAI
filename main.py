@@ -2,8 +2,9 @@
 
 import sys
 import random
+import requests
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QElapsedTimer, QTimer
 
 from src.styles import STYLE_SHEET
 from src.ui.tela_inicial import TelaInicial
@@ -12,7 +13,25 @@ from src.ui.tela_feedback import TelaFeedback
 from src.ui.tela_final import TelaFinal
 from src.ui.tela_ranking import TelaRanking
 
-# Banco de dados de perguntas simuladas (para demonstrar o jogo de forma 100% funcional)
+BACKEND_URL = "http://127.0.0.1:5000"
+USE_BACKEND = True
+
+TEMA_NORMALIZADO = {
+    "saude": "Ciência",
+    "saúde": "Ciência",
+    "ciencia": "Ciência",
+    "ciência": "Ciência",
+    "tecnologia": "Tecnologia",
+    "esportes": "Esportes",
+    "cinema": "Cinema",
+}
+
+
+def _normalizar_tema(valor: str) -> str:
+    return TEMA_NORMALIZADO.get(str(valor).strip().lower(), str(valor).strip())
+
+
+# Banco de dados de perguntas locais para fallback
 BANCO_PERGUNTAS = [
     {
         "tema": "Tecnologia",
@@ -90,15 +109,15 @@ class EdnAIApp(QMainWindow):
         self.questoes_selecionadas = []
         self.pergunta_atual_idx = 0
         self.respostas_corretas = 0
+        self.cronometro_partida = QElapsedTimer()
+        self.timer_partida = QTimer(self)
+        self.timer_partida.setInterval(1000)
+        self.timer_partida.timeout.connect(self.atualizar_tempo_quiz)
+        self.usuario_backend_id = None
+        self.partida_backend_id = None
         
         # Histórico do Ranking Geral (Iniciado com dados mockados)
-        self.lista_ranking = [
-            {"nome": "Júlia Mendes", "pontos": "4/4"},
-            {"nome": "Rafael Costa", "pontos": "3/4"},
-            {"nome": "Bianca Oliveira", "pontos": "3/4"},
-            {"nome": "Lucas Pereira", "pontos": "2/4"},
-            {"nome": "Marina Alves", "pontos": "2/4"},
-        ]
+        self.lista_ranking = []
         
         # Stacked Widget para empilhar e alternar entre as telas
         self.stacked_widget = QStackedWidget()
@@ -130,26 +149,86 @@ class EdnAIApp(QMainWindow):
         self.stacked_widget.setCurrentWidget(self.tela_inicial)
 
     def iniciar_jogo(self, dados_jogador):
-        """Prepara a partida filtrando as manchetes baseadas nos temas marcados."""
+        """
+        Prepara a partida com dados locais.
+        """
         self.jogador_nome = dados_jogador["nome"]
         self.jogador_idade = dados_jogador["idade"]
         self.jogador_consentimento = dados_jogador["consentimento"]
-        temas_escolhidos = dados_jogador["temas"]
+        temas_escolhidos = [_normalizar_tema(tema) for tema in dados_jogador["temas"]]
+        self.questoes_selecionadas = []
+        self.pergunta_atual_idx = 0
+        self.respostas_corretas = 0
+        self.usuario_backend_id = None
+        self.partida_backend_id = None
+        self.cronometro_partida.restart()
+        self.timer_partida.start()
+
+        if USE_BACKEND:
+            try:
+                temas_str = ",".join(temas_escolhidos)
+                response = requests.get(
+                    f"{BACKEND_URL}/api/noticias",
+                    params={"temas": temas_str, "limite": 10},
+                    timeout=5,
+                )
+
+                if response.status_code == 200:
+                    noticias = response.json()
+                    if noticias:
+                        self.questoes_selecionadas = noticias[:10]
+                        self.criar_partida_backend(temas_str)
+                        self.iniciar_quiz()
+                        return
+            except requests.RequestException as error:
+                print(f"Backend indisponível. Usando dados locais. Detalhe: {error}")
+
+        perguntas_filtradas = [q for q in BANCO_PERGUNTAS if _normalizar_tema(q["tema"]) in temas_escolhidos]
         
-        # Filtragem de perguntas baseando-se nos checkboxes ativados
-        perguntas_filtradas = [q for q in BANCO_PERGUNTAS if q["tema"] in temas_escolhidos]
-        
-        # Se nenhuma pergunta coincidir por segurança (fallback)
         if not perguntas_filtradas:
             perguntas_filtradas = list(BANCO_PERGUNTAS)
-            
-        # Sorteia as perguntas filtradas
+        
         random.shuffle(perguntas_filtradas)
-        # O jogo terá no máximo 4 rodadas
-        self.questoes_selecionadas = perguntas_filtradas[:4]
+        self.questoes_selecionadas = perguntas_filtradas[:10]
+        self.iniciar_quiz()
+
+    def criar_partida_backend(self, temas_str):
+        """Registra usuário e partida no backend."""
+        try:
+            user_response = requests.post(
+                f"{BACKEND_URL}/api/usuarios",
+                json={
+                    "nome": self.jogador_nome,
+                    "idade": self.jogador_idade,
+                    "consentimento": self.jogador_consentimento,
+                },
+                timeout=5,
+            )
+            if user_response.status_code != 201:
+                return
+
+            self.usuario_backend_id = user_response.json()["id"]
+            match_response = requests.post(
+                f"{BACKEND_URL}/api/partidas",
+                json={
+                    "usuario_id": self.usuario_backend_id,
+                    "temas": temas_str,
+                    "total_questoes": len(self.questoes_selecionadas),
+                },
+                timeout=5,
+            )
+            if match_response.status_code == 201:
+                self.partida_backend_id = match_response.json()["id"]
+        except requests.RequestException as error:
+            print(f"Não foi possível criar partida no backend: {error}")
+
+    def iniciar_quiz(self):
+        """Reinicia os contadores e mostra a primeira pergunta."""
         
         self.pergunta_atual_idx = 0
         self.respostas_corretas = 0
+        self.cronometro_partida.restart()
+        self.atualizar_tempo_quiz()
         
         self.exibir_pergunta_atual()
         self.stacked_widget.setCurrentWidget(self.tela_quiz)
@@ -162,23 +241,40 @@ class EdnAIApp(QMainWindow):
             self.pergunta_atual_idx + 1, 
             len(self.questoes_selecionadas)
         )
+        self.atualizar_tempo_quiz()
         
     def processar_resposta(self, resposta_jogador):
-        """Compara a escolha do usuário com o gabarito e ativa o feedback educativo."""
+        """
+        Compara a escolha do usuário com o gabarito e ativa o feedback educativo.
+        """
         pergunta = self.questoes_selecionadas[self.pergunta_atual_idx]
         acertou = (resposta_jogador == pergunta["is_fato"])
         
         if acertou:
             self.respostas_corretas += 1
-            
+
+        if self.partida_backend_id:
+            try:
+                requests.post(
+                    f"{BACKEND_URL}/api/partidas/{self.partida_backend_id}/respostas",
+                    json={
+                        "noticia_id": pergunta.get("id", self.pergunta_atual_idx + 1),
+                        "resposta_jogador": resposta_jogador,
+                        "acertou": acertou,
+                    },
+                    timeout=5,
+                )
+            except requests.RequestException as error:
+                print(f"Não foi possível registrar resposta no backend: {error}")
+
         eh_ultima = (self.pergunta_atual_idx == len(self.questoes_selecionadas) - 1)
         
         # Transiciona para o feedback
         self.tela_feedback.exibir_feedback(
             acertou=acertou,
             explicacao_texto=pergunta["explicacao"],
-            link_texto=f"Verificação completa no {pergunta['fonte']}",
-            link_url=pergunta["fonte_url"],
+            link_texto=f"Verificação completa no {pergunta.get('fonte', 'Fonte')}",
+            link_url=pergunta.get("fonte_url", "#"),
             eh_ultima=eh_ultima
         )
         self.stacked_widget.setCurrentWidget(self.tela_feedback)
@@ -195,37 +291,70 @@ class EdnAIApp(QMainWindow):
                 self.respostas_corretas, 
                 len(self.questoes_selecionadas)
             )
+            self.timer_partida.stop()
+            duracao = int(self.cronometro_partida.elapsed() / 1000)
+
+            if self.partida_backend_id:
+                try:
+                    requests.post(
+                        f"{BACKEND_URL}/api/partidas/{self.partida_backend_id}/finalizar",
+                        json={
+                            "acertos": self.respostas_corretas,
+                            "duracao_segundos": duracao,
+                        },
+                        timeout=5,
+                    )
+                except requests.RequestException as error:
+                    print(f"Não foi possível finalizar partida no backend: {error}")
             
-            # Registra no ranking se houver autorização
+            # Registra no ranking local se houver autorização
             if self.jogador_consentimento:
-                # Remove registros de testes antigos do jogador ativo se existirem
-                self.lista_ranking = [r for r in self.lista_ranking if f"{self.jogador_nome} (Você)" not in r["nome"]]
-                
                 registro = {
-                    "nome": f"{self.jogador_nome} (Você)", 
-                    "pontos": f"{self.respostas_corretas}/{len(self.questoes_selecionadas)}"
+                    "nome": f"{self.jogador_nome} (Você)",
+                    "pontos": f"{self.respostas_corretas}/{len(self.questoes_selecionadas)}",
+                    "tempo": duracao
                 }
+                self.lista_ranking = [item for item in self.lista_ranking if item.get("nome") != registro["nome"]]
                 self.lista_ranking.append(registro)
                 
-                # Reordena a tabela com base na pontuação máxima decrescente
+                # Reordena a tabela por acertos, depois por menor tempo
                 def obter_acertos(item):
                     try:
                         return int(item["pontos"].split("/")[0])
                     except ValueError:
                         return 0
-                self.lista_ranking.sort(key=obter_acertos, reverse=True)
+                self.lista_ranking.sort(key=lambda item: (-obter_acertos(item), item.get("tempo", 0), item["nome"]))
                 
             self.stacked_widget.setCurrentWidget(self.tela_final)
             
     def mostrar_ranking(self):
-        """Alimenta a tela de classificação e a exibe."""
+        """Exibe o ranking vindo do backend, com fallback local."""
+        if USE_BACKEND:
+            try:
+                response = requests.get(
+                    f"{BACKEND_URL}/api/ranking",
+                    params={"limite": 10},
+                    timeout=5,
+                )
+                if response.status_code == 200:
+                    ranking = response.json()
+                    if ranking:
+                        self.lista_ranking = ranking
+            except requests.RequestException as error:
+                print(f"Não foi possível carregar ranking do backend: {error}")
+
         self.tela_ranking.definir_dados_ranking(self.lista_ranking)
         self.stacked_widget.setCurrentWidget(self.tela_ranking)
         
     def voltar_inicio(self):
         """Limpa as seleções antigas do formulário e retorna à identificação."""
+        self.timer_partida.stop()
         self.tela_inicial.resetar_formulario()
         self.stacked_widget.setCurrentWidget(self.tela_inicial)
+
+    def atualizar_tempo_quiz(self):
+        segundos = int(self.cronometro_partida.elapsed() / 1000)
+        self.tela_quiz.atualizar_tempo(segundos)
 
 
 if __name__ == "__main__":

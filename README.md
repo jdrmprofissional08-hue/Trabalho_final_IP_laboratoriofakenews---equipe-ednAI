@@ -1,84 +1,117 @@
-# ednAI — Laboratório de Combate a Fake News (Interface Gráfica)
+# ednAI - Laboratório de Combate a Fake News
 
-Este repositório contém a entrega da interface gráfica do software **ednAI - Laboratório de Combate a Fake News**, desenvolvido em Python utilizando **PySide6** como requisito para a disciplina de Introdução à Programação (UFCAT).
+Aplicação em Python para a disciplina de Introdução à Programação (UFCAT), com interface gráfica em `PySide6`, backend local em `Flask` e banco `SQLite`.
 
----
+## Apresentação
 
-## 📌 Divisão do Trabalho - Grupo 2 (Front-end)
+O projeto é um jogo educativo de verificação de notícias. O usuário informa seus dados, escolhe temas de interesse e responde se cada manchete é fato ou fake.
 
-Este módulo foi projetado para separar de maneira limpa as responsabilidades de desenvolvimento da interface visual:
+O objetivo é exercitar lógica de programação, estruturação de código, integração entre módulos e uso de interface gráfica em um contexto de educação digital.
 
-### Responsabilidades do Mateus (Desenvolvidas nesta entrega):
-* **Identidade Visual**: Definição da paleta de cores moderna (Slate, Royal Blue, Emerald Green e Crimson Red), fontes do sistema limpas e folhas de estilo CSS/QSS.
-* **Componentes Customizados**: Criação de painéis com sombra suave (`CardFrame`) e placeholders de imagens vetoriais desenhados via código (`ImagePlaceholder`) para máxima compatibilidade sem arquivos externos.
-* **Tela Inicial**: Layout do formulário contendo Nome Completo, Idade (com validador numérico de entrada), seleção de temas de interesse via botões de seleção múltipla (grid responsivo) e aceite dos termos.
-* **Tela do Quiz**: Cabeçalho de desafios, contador de progresso e porcentagem de forma síncrona, barra de progresso visual, estrutura do painel de notícias e botões estilizados "É FATO" e "É FAKE".
-* **Garantia de Responsividade**: Utilização de layouts dinâmicos (`QVBoxLayout`, `QHBoxLayout`, `QGridLayout`) que garantem consistência visual tanto em computadores quanto em telas menores.
+## Objetivos do Projeto
 
-### Responsabilidades do Mouhamed (Estruturas prontas para integração):
-* **Tela de Feedback**: Exibição da resposta do usuário com explicação educativa sobre a veracidade dos fatos. (Implementada como placeholder interativo).
-* **Tela Final**: Painel de encerramento mostrando pontuação total de acertos e erros. (Implementada como placeholder interativo).
-* **Tela de Ranking**: Classificação dos melhores jogadores da Mostra UFCAT. (Implementada como placeholder interativo integrado ao fluxo).
+- Desenvolver uma aplicação interativa em Python.
+- Aplicar conceitos de controle de fluxo, funções, listas e organização modular.
+- Explorar interface gráfica com `PySide6`.
+- Armazenar participantes, partidas, respostas e ranking em banco local.
+- Exibir feedback educativo após cada resposta.
 
----
+## Fluxo da Aplicação
 
-## 📁 Estrutura do Projeto
+1. Tela inicial com nome, idade, consentimento e temas de interesse.
+2. Tela de quiz com manchete, contexto e botões `É FATO` e `É FAKE`.
+3. Tela de feedback com explicação da resposta.
+4. Tela final com pontuação.
+5. Tela de ranking com histórico das partidas.
 
-```
-trabalho_ip_mateus/
-│
-├── main.py                     # Inicialização do Qt, orquestração e gerenciamento do fluxo do jogo
-├── requirements.txt            # Dependência do framework PySide6
-├── README.md                   # Documentação do projeto (este arquivo)
-│
+## Estrutura do Projeto
+
+```text
+trabalho_final_ip_laboratoriofakenews---equipe-ednAI/
+├── main.py
+├── requirements.txt
+├── backend/
+│   ├── app.py
+│   ├── database.py
+│   ├── seed_news_from_zip.py
+│   ├── news_seed.json
+│   └── news_images/
 └── src/
-    ├── __init__.py
-    ├── styles.py               # Identidade visual, cores e master stylesheet QSS
-    │
+    ├── styles.py
     └── ui/
-        ├── __init__.py
-        ├── components.py       # Cartões sombreados e placeholders vetoriais de mídia
-        ├── tela_inicial.py     # Tela Inicial de Cadastro e Temas [Mateus]
-        ├── tela_quiz.py        # Tela de Quiz de Verificação de Manchetes [Mateus]
-        │
-        # Placeholders estruturados prontos para a integração
-        ├── tela_feedback.py    # Tela de feedback de acertos e justificativas
-        ├── tela_final.py       # Tela de placar final
-        └── tela_ranking.py     # Tela de ranking global da Mostra UFCAT
+        ├── components.py
+        ├── tela_inicial.py
+        ├── tela_quiz.py
+        ├── tela_feedback.py
+        ├── tela_final.py
+        └── tela_ranking.py
 ```
 
----
+## Tecnologias Utilizadas
 
-## 🚀 Como Executar o Projeto
+- Python 3.10+
+- PySide6
+- Flask
+- requests
+- SQLite
 
-Certifique-se de ter o Python 3.10 ou superior instalado em sua máquina.
+## Requisitos da Disciplina
 
-### 1. Criar e ativar o ambiente virtual (Recomendado)
+O projeto foi organizado para atender os requisitos principais da especificação:
 
-No terminal do seu sistema operacional (Windows PowerShell/CMD ou Linux/macOS):
+- arquivo principal de execução em `main.py`;
+- separação por módulos;
+- interface gráfica;
+- uso de biblioteca Python externa;
+- persistência local com banco de dados;
+- documentação básica do projeto;
+
+## Como Executar
+
+1. Crie e ative um ambiente virtual:
 
 ```bash
-# Criar ambiente virtual
-python -m venv venv
-
-# Ativar ambiente virtual (Windows PowerShell)
-.\venv\Scripts\Activate.ps1
-
-# Ativar ambiente virtual (Windows CMD)
-.\venv\Scripts\activate.bat
-
-# Ativar ambiente virtual (Linux/macOS)
+python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 2. Instalar as dependências
+2. Instale as dependências:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Iniciar a aplicação
+3. Inicie o backend:
 
 ```bash
-python main.py
+python3 backend/app.py
 ```
+
+4. Em outro terminal, com o ambiente virtual ativado, inicie a interface gráfica:
+
+```bash
+python3 main.py
+```
+
+Durante o quiz, a tela mostra um cronômetro e um contador de progresso no topo.
+
+## Backend
+
+O backend local fornece:
+
+- notícias filtradas por tema;
+- imagens completas das postagens;
+- cadastro dos participantes;
+- registro das partidas e respostas;
+- ranking geral com pontuação e tempo.
+
+Rotas principais:
+
+- `GET /api/health`
+- `GET /api/noticias`
+- `GET /api/imagens/<arquivo>`
+- `POST /api/usuarios`
+- `POST /api/partidas`
+- `POST /api/partidas/<id>/respostas`
+- `POST /api/partidas/<id>/finalizar`
+- `GET /api/ranking`

@@ -19,13 +19,13 @@ class TelaQuiz(QWidget):
     def init_ui(self):
         # Layout Principal da Tela (Vertical)
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(40, 25, 40, 25)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(24, 16, 24, 16)
+        main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignHCenter)
         
         # --- HEADER DE FASE ---
         header_layout = QVBoxLayout()
-        header_layout.setSpacing(4)
+        header_layout.setSpacing(2)
         header_layout.setAlignment(Qt.AlignCenter)
         
         lbl_fase = QLabel("✨ FASE 02")
@@ -47,8 +47,30 @@ class TelaQuiz(QWidget):
         
         # --- CONTAINER DE PROGRESSO ---
         prog_container = QVBoxLayout()
-        prog_container.setSpacing(6)
+        prog_container.setSpacing(4)
         #prog_container.setMaximumWidth(580)
+
+        # Barra superior com tempo e progresso
+        topo_layout = QHBoxLayout()
+        topo_layout.setSpacing(12)
+
+        self.lbl_tempo = QLabel("⏱ 00:00")
+        self.lbl_tempo.setStyleSheet(
+            "font-size: 12px; font-weight: bold; color: #0F172A; "
+            "background-color: #E0F2FE; padding: 4px 10px; border-radius: 999px;"
+        )
+
+        self.lbl_status = QLabel("📰 0/10")
+        self.lbl_status.setStyleSheet(
+            "font-size: 12px; font-weight: bold; color: #0F172A; "
+            "background-color: #EEF2FF; padding: 4px 10px; border-radius: 999px;"
+        )
+        self.lbl_status.setAlignment(Qt.AlignCenter)
+
+        topo_layout.addWidget(self.lbl_tempo, 0, Qt.AlignLeft)
+        topo_layout.addStretch(1)
+        topo_layout.addWidget(self.lbl_status, 0, Qt.AlignRight)
+        prog_container.addLayout(topo_layout)
         
         # Labels de texto (Número da Pergunta e Percentual)
         labels_layout = QHBoxLayout()
@@ -73,10 +95,10 @@ class TelaQuiz(QWidget):
         
         # --- CARD DA NOTÍCIA (POSTAGEM) ---
         self.card = CardFrame()
-        self.card.setMaximumWidth(580)
+        self.card.setMaximumWidth(640)
         card_layout = QVBoxLayout(self.card)
-        card_layout.setContentsMargins(25, 25, 25, 25)
-        card_layout.setSpacing(14)
+        card_layout.setContentsMargins(18, 18, 18, 18)
+        card_layout.setSpacing(10)
         
         # Placeholder de Imagem
         self.image_widget = ImagePlaceholder("IMAGEM DA POSTAGEM")
@@ -84,12 +106,12 @@ class TelaQuiz(QWidget):
         
         # Fonte / Data da Notícia
         self.lbl_fonte = QLabel("PORTAL NOTÍCIAS HOJE • há 2 horas")
-        self.lbl_fonte.setStyleSheet("font-size: 11px; font-weight: bold; color: #2563EB; text-transform: uppercase; letter-spacing: 0.5px;")
+        self.lbl_fonte.setStyleSheet("font-size: 10px; font-weight: bold; color: #2563EB; text-transform: uppercase; letter-spacing: 0.4px;")
         card_layout.addWidget(self.lbl_fonte)
         
         # Manchete/Título
         self.lbl_manchete = QLabel("Título da Manchete da Notícia Fato ou Fake")
-        self.lbl_manchete.setStyleSheet("font-size: 18px; font-weight: bold; color: #1E293B; line-height: 1.4;")
+        self.lbl_manchete.setStyleSheet("font-size: 17px; font-weight: bold; color: #1E293B; line-height: 1.2;")
         self.lbl_manchete.setWordWrap(True)
         card_layout.addWidget(self.lbl_manchete)
         
@@ -98,7 +120,7 @@ class TelaQuiz(QWidget):
             "Texto de contexto contendo detalhes da notícia que podem dar dicas se ela "
             "é verídica ou se é uma desinformação gerada por IA."
         )
-        self.lbl_contexto.setStyleSheet("font-size: 14px; color: #475569; line-height: 1.5;")
+        self.lbl_contexto.setStyleSheet("font-size: 13px; color: #475569; line-height: 1.35;")
         self.lbl_contexto.setWordWrap(True)
         card_layout.addWidget(self.lbl_contexto)
         
@@ -106,7 +128,7 @@ class TelaQuiz(QWidget):
         
         # --- BOTÕES DE DECISÃO ---
         botoes_layout = QHBoxLayout()
-        botoes_layout.setSpacing(15)
+        botoes_layout.setSpacing(10)
         #botoes_layout.setMaximumWidth(580)
         
         self.btn_fato = QPushButton("✔  É FATO")
@@ -128,7 +150,7 @@ class TelaQuiz(QWidget):
         
         lbl_footer = QLabel("ednAI • Introdução à Programação • UFCAT")
         lbl_footer.setAlignment(Qt.AlignCenter)
-        lbl_footer.setStyleSheet("font-size: 11px; color: #94A3B8; font-weight: 500;")
+        lbl_footer.setStyleSheet("font-size: 10px; color: #94A3B8; font-weight: 500;")
         main_layout.addWidget(lbl_footer)
         
     def carregar_pergunta(self, pergunta_dados):
@@ -141,11 +163,18 @@ class TelaQuiz(QWidget):
         # Define o tema do placeholder da imagem
         tema = pergunta_dados.get('tema', 'NOTÍCIA')
         self.image_widget.text = f"IMAGEM SOBRE: {tema.upper()}"
+        self.image_widget.image_path = pergunta_dados.get("image_path", "")
         self.image_widget.update() # Força redesenho
         
     def atualizar_progresso(self, atual, total):
         """Atualiza o contador textual e a barra de progresso."""
         self.lbl_contador.setText(f"Pergunta {atual} de {total}")
+        self.lbl_status.setText(f"📰 {atual}/{total}")
         percentual = int((atual / total) * 100) if total > 0 else 0
         self.lbl_percentual.setText(f"{percentual}% concluído")
         self.progress_bar.setValue(percentual)
+
+    def atualizar_tempo(self, segundos):
+        minutos = max(0, segundos) // 60
+        restante = max(0, segundos) % 60
+        self.lbl_tempo.setText(f"⏱ {minutos:02d}:{restante:02d}")
