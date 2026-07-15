@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado — ednAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/resultado.js') }}" defer></script>
+</head>
+<body>
+    <main class="page">
+        <header class="page-header">
+            <p class="phase-badge danger">🏁 Fim de jogo</p>
+            <h1>Resultados do Laboratório</h1>
+        </header>
+
+        <section class="card result-card" aria-labelledby="pontuacao-titulo">
+            <h2 id="pontuacao-titulo">Sua pontuação</h2>
+            <p id="pontuacao" class="score">0 / 0</p>
+            <p id="detalhes" class="score-details">Acertos: 0 | Erros: 0</p>
+            <p id="feedback-geral" class="subtitle"></p>
+        </section>
+
+        <section class="card ednai-card" aria-labelledby="ednai-titulo">
+            <h2 id="ednai-titulo">🤖 Ednai</h2>
+            <div id="ednai-resposta" class="ai-box" role="status" aria-live="polite">
+                A análise do Ednai aparecerá aqui após o fim do desafio.
+            </div>
+            <form id="form-ednai" class="chat-form">
+                <label class="sr-only" for="pergunta-ednai">Pergunte ao Ednai sobre seu resultado</label>
+                <input id="pergunta-ednai" type="text" maxlength="800" placeholder="Pergunte ao Ednai sobre seu resultado...">
+                <button id="btn-ednai" class="button button-primary" type="submit">Perguntar</button>
+            </form>
+        </section>
+
+        <div id="mensagem" class="message" role="status" aria-live="polite"></div>
+
+        <nav class="actions-row" aria-label="Navegação do resultado">
+            <a class="button button-outline" href="/ranking">🏆 Ver Ranking</a>
+            <a class="button button-primary" href="/">Jogar Novamente ➔</a>
+        </nav>
+
+        <footer class="footer">ednAI • Introdução à Programação • UFCAT</footer>
+    </main>
+</body>
+</html>

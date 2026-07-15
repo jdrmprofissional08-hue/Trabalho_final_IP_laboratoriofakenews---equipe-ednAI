@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ednAI — Laboratório de Combate a Fake News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/inicio.js') }}" defer></script>
+</head>
+<body>
+    <main class="page page-center">
+        <header class="page-header">
+            <p class="eyebrow">UFCAT</p>
+            <h1>Laboratório de Combate a Fake News</h1>
+            <p class="subtitle">
+                Coloque seu olhar crítico à prova. As notícias deste laboratório testam sua capacidade de distinguir fato de fake.
+            </p>
+        </header>
+
+        <section class="card form-card" aria-labelledby="identificacao-titulo">
+            <h2 id="identificacao-titulo" class="section-title">🔍 Identificação do participante</h2>
+
+            <form id="form-inicio" novalidate>
+                <div class="field">
+                    <label for="nome">Seu nome completo</label>
+                    <input id="nome" name="nome" type="text" autocomplete="name" maxlength="80" placeholder="Ex: Maria Souza Lima" required>
+                </div>
+
+                <div class="field">
+                    <label for="idade">Idade</label>
+                    <input id="idade" name="idade" type="number" inputmode="numeric" min="1" max="120" placeholder="Ex: 21" required>
+                </div>
+
+                <fieldset class="theme-fieldset">
+                    <legend>📌 Temas de interesse</legend>
+                    <p>Selecione os temas para personalizar as notícias da sua partida:</p>
+                    <div class="theme-grid">
+                        <label class="theme-option">
+                            <input type="checkbox" name="temas" value="Esportes">
+                            <span>⚽ Esportes e Suplementação</span>
+                        </label>
+                        <label class="theme-option">
+                            <input type="checkbox" name="temas" value="Cinema">
+                            <span>🎬 Cinema</span>
+                        </label>
+                        <label class="theme-option">
+                            <input type="checkbox" name="temas" value="Tecnologia">
+                            <span>💻 Tecnologia</span>
+                        </label>
+                        <label class="theme-option">
+                            <input type="checkbox" name="temas" value="Ciencia">
+                            <span>🔬 Ciência</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <label class="consent-option">
+                    <input id="consentimento" name="consentimento" type="checkbox" required>
+                    <span>Aceito participar da atividade e permitir que minha pontuação apareça no Ranking Geral.</span>
+                </label>
+
+                <div id="mensagem" class="message" role="status" aria-live="polite"></div>
+
+                <button id="btn-iniciar" class="button button-primary" type="submit">
+                    Iniciar Laboratório ➔
+                </button>
+            </form>
+        </section>
+
+        <footer class="footer">ednAI • Introdução à Programação • UFCAT</footer>
+    </main>
+</body>
+</html>

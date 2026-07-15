@@ -1,15 +1,35 @@
 # ednAI — Laboratório de Combate a Fake News
 
-Aplicação educacional para treinar verificação de informações. O projeto combina:
+Aplicação educacional para treinar verificação de informações, com duas interfaces mantidas no mesmo repositório:
+
+1. Interface desktop desenvolvida com `PySide6`.
+2. Interface web desenvolvida com `HTML`, `CSS` e `JavaScript`.
+
+Ambas utilizam o mesmo backend `Flask`, o mesmo banco `SQLite`, as mesmas notícias, as mesmas regras do quiz, o mesmo ranking e a mesma integração com o agente educacional `Ednai`/Gemini.
+
+O jogo corrige as respostas automaticamente. O agente não decide se uma notícia é `FATO` ou `FAKE`; ele entra depois da correção para explicar desempenho, erros, acertos e boas práticas de educação midiática.
+
+## Visão Geral
+
+O ednAI combina:
 
 - interface desktop em `PySide6`;
+- interface web responsiva para navegador e celular;
 - backend local em `Flask`;
 - persistência em `SQLite`;
 - acervo local de notícias;
 - ranking de partidas;
 - agente educacional `Ednai`, integrado ao Gemini e apoiado por uma base RAG local com ChromaDB.
 
-O jogo corrige as respostas automaticamente. O agente não decide se uma notícia é `FATO` ou `FAKE`; ele entra depois da correção para explicar desempenho, erros, acertos e boas práticas de educação midiática.
+## Arquitetura
+
+```text
+Desktop PySide6 ─┐
+                 ├── Backend Flask ── SQLite
+Web HTML/CSS/JS ─┘                  └─ Ednai/Gemini
+```
+
+A interface desktop e a interface web são independentes na camada visual, mas compartilham a mesma API Flask. Não existem dois backends nem dois bancos de dados.
 
 ## Fluxo Do Produto
 
@@ -29,23 +49,204 @@ Resultado e ranking são atualizados
 Ednai analisa desempenho e abre chat de acompanhamento
 ```
 
-## Arquitetura
+## Versão Desktop
 
-```text
-PySide6
-  └── main.py
-      └── Backend Flask
-          ├── SQLite
-          ├── Acervo de notícias
-          └── Ednai
-              ├── Prompt de sistema
-              ├── Memória em sessão
-              ├── RAG local com ChromaDB
-              ├── Gemini API
-              └── Resposta educativa
+A versão desktop original continua sendo executada por:
+
+```bash
+python main.py
 ```
 
-O backend atual é `Flask`. A arquitetura do agente foi adicionada seguindo esse padrão para evitar uma migração desnecessária para outro framework.
+Ela usa `PySide6` e se comunica com o backend Flask em:
+
+```text
+http://127.0.0.1:5000
+```
+
+## Versão Web
+
+A versão web é servida pelo próprio Flask em:
+
+```text
+http://localhost:5000
+```
+
+Ela usa URLs relativas, como `/api/...`, para funcionar tanto localmente quanto por Cloudflare Tunnel.
+
+## Instalação
+
+Crie o ambiente virtual:
+
+```bash
+python -m venv venv
+```
+
+Ative no Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+Ative no Linux/macOS:
+
+```bash
+source venv/bin/activate
+```
+
+Instale as dependências:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Configuração Do `.env`
+
+Crie um arquivo `.env` na raiz do projeto. Use `.env.example` como base:
+
+```env
+GEMINI_API_KEY=sua_chave_principal
+GEMINI_API_KEY_2=sua_segunda_chave_opcional
+GEMINI_API_KEY_3=sua_terceira_chave_opcional
+
+GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_TEMPERATURE=0.3
+```
+
+Também é aceito:
+
+```env
+GEMINI_API_KEYS=chave_1,chave_2,chave_3
+```
+
+Regras:
+
+- nunca coloque chaves no código;
+- nunca coloque chaves no HTML, CSS ou JavaScript;
+- `.env` está no `.gitignore`;
+- o cliente tenta as chaves em ordem;
+- se uma chave bater cota, limite de taxa, indisponibilidade temporária ou erro de permissão, a próxima é usada automaticamente.
+
+## Como Executar O Backend
+
+```bash
+python backend/app.py
+```
+
+O servidor Flask sobe em:
+
+```text
+http://localhost:5000
+```
+
+Teste rápido:
+
+```bash
+curl http://127.0.0.1:5000/api/health
+```
+
+Resposta esperada:
+
+```json
+{"status":"ok"}
+```
+
+## Como Executar O Desktop
+
+Com o backend aberto em outro terminal:
+
+```bash
+python main.py
+```
+
+## Como Acessar A Interface Web
+
+Com o backend aberto, acesse no navegador:
+
+```text
+http://localhost:5000
+```
+
+Páginas principais:
+
+- `/`: tela inicial;
+- `/quiz`: tela do quiz;
+- `/resultado`: resultado final;
+- `/ranking`: ranking geral.
+
+## Cloudflare Tunnel
+
+Antes de abrir o túnel, instale o `cloudflared`.
+
+### Windows
+
+Opção simples com Winget:
+
+```bash
+winget install --id Cloudflare.cloudflared
+```
+
+Se o Winget não estiver disponível, baixe o instalador em:
+
+```text
+https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+```
+
+### Linux
+
+Em distribuições Debian/Ubuntu, baixe o pacote `.deb` mais recente na página oficial da Cloudflare:
+
+```text
+https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+```
+
+Depois instale o arquivo baixado:
+
+```bash
+sudo dpkg -i cloudflared-linux-amd64.deb
+```
+
+### macOS
+
+Com Homebrew:
+
+```bash
+brew install cloudflared
+```
+
+Confirme a instalação:
+
+```bash
+cloudflared --version
+```
+
+Com o Flask rodando, execute:
+
+```bash
+cloudflared tunnel --url http://localhost:5000
+```
+
+O Cloudflare exibirá um link público temporário. Esse link poderá ser aberto em outro computador ou celular, inclusive fora da mesma rede Wi-Fi.
+
+O computador que hospeda o projeto precisa permanecer:
+
+- ligado;
+- conectado à internet;
+- com o Flask aberto;
+- com o Cloudflare Tunnel aberto.
+
+O link do Quick Tunnel pode mudar sempre que o comando for reiniciado.
+
+## Como Gerar QR Code
+
+Use o link público gerado pelo Cloudflare Tunnel em qualquer gerador de QR Code confiável.
+
+Fluxo sugerido para apresentação:
+
+1. iniciar `python backend/app.py`;
+2. iniciar `cloudflared tunnel --url http://localhost:5000`;
+3. copiar o link público gerado;
+4. gerar o QR Code com esse link;
+5. testar o QR Code em um celular usando 4G/5G.
 
 ## Estrutura De Pastas
 
@@ -67,6 +268,23 @@ O backend atual é `Flask`. A arquitetura do agente foi adicionada seguindo esse
 │   └── news_images/
 ├── src/
 │   └── ui/
+├── web/
+│   ├── templates/
+│   │   ├── index.html
+│   │   ├── quiz.html
+│   │   ├── resultado.html
+│   │   ├── ranking.html
+│   │   └── erro.html
+│   └── static/
+│       ├── css/
+│       │   └── style.css
+│       ├── images/
+│       └── js/
+│           ├── common.js
+│           ├── inicio.js
+│           ├── quiz.js
+│           ├── resultado.js
+│           └── ranking.js
 ├── main.py
 ├── requirements.txt
 └── .env.example
@@ -74,7 +292,7 @@ O backend atual é `Flask`. A arquitetura do agente foi adicionada seguindo esse
 
 ## Componentes Principais
 
-### Interface
+### Interface Desktop
 
 - `main.py`: coordena telas, estado da partida, comunicação HTTP com o backend e chamadas ao Ednai.
 - `src/ui/tela_inicial.py`: formulário inicial.
@@ -83,9 +301,19 @@ O backend atual é `Flask`. A arquitetura do agente foi adicionada seguindo esse
 - `src/ui/tela_final.py`: resultado final, análise do Ednai e chat.
 - `src/ui/tela_ranking.py`: ranking.
 
+### Interface Web
+
+- `web/templates/`: páginas HTML servidas pelo Flask.
+- `web/static/css/style.css`: identidade visual e responsividade.
+- `web/static/js/common.js`: utilitários de API, estado mínimo da partida e mensagens.
+- `web/static/js/inicio.js`: criação da partida web.
+- `web/static/js/quiz.js`: fluxo do quiz web.
+- `web/static/js/resultado.js`: resultado e conversa com Ednai.
+- `web/static/js/ranking.js`: carregamento do ranking.
+
 ### Backend
 
-- `backend/app.py`: rotas HTTP do jogo e do Ednai.
+- `backend/app.py`: rotas HTTP do jogo, da interface web e do Ednai.
 - `backend/database.py`: criação e acesso ao SQLite.
 - `backend/news_seed.json`: gabarito e metadados das notícias.
 - `backend/news_images/`: imagens exibidas no quiz.
@@ -99,242 +327,127 @@ O backend atual é `Flask`. A arquitetura do agente foi adicionada seguindo esse
 - `app/ai/rag.py`: indexação e consulta ChromaDB com embeddings determinísticos leves.
 - `app/ai/knowledge/`: documentos Markdown usados como base de apoio.
 
-## Variáveis De Ambiente
+## Endpoints Principais
 
-Crie um arquivo `.env` na raiz do projeto. Use `.env.example` como base:
+### Páginas Web
 
-```env
-GEMINI_API_KEY=sua_chave_principal
-GEMINI_API_KEY_2=sua_segunda_chave_opcional
-GEMINI_API_KEY_3=sua_terceira_chave_opcional
+- `GET /`
+- `GET /quiz`
+- `GET /resultado`
+- `GET /ranking`
 
-GEMINI_MODEL=gemini-3.1-flash-lite
-GEMINI_TEMPERATURE=0.3
-```
+### API Do Jogo
 
-Também é aceito:
+- `GET /api/health`
+- `GET /api/imagens/<filename>`
+- `GET /api/temas`
+- `GET /api/noticias?temas=Ciência,Tecnologia&limite=10`
+- `GET /api/noticias-web?temas=Ciência,Tecnologia&limite=10`
+- `POST /api/usuarios`
+- `POST /api/partidas`
+- `POST /api/web/partidas` — cria usuário, partida, token web e seleção de notícias.
+- `GET /api/partidas/<id>/questao` — requer token web em `X-Partida-Token`.
+- `POST /api/partidas/<id>/respostas`
+- `POST /api/partidas/<id>/responder` — requer token web e corrige no backend.
+- `POST /api/partidas/<id>/finalizar`
+- `POST /api/web/partidas/<id>/finalizar` — requer token web e ignora pontuação enviada pelo navegador.
+- `GET /api/partidas/<id>/resultado` — requer token web.
+- `GET /api/ranking?limite=10`
 
-```env
-GEMINI_API_KEYS=chave_1,chave_2,chave_3
-```
+### API Do Ednai
 
-Regras:
+- `POST /api/ednai/analyze`
+- `POST /api/partidas/<id>/ednai/analyze` — requer token web e busca resultado no banco.
+- `POST /api/partidas/<id>/ednai/chat` — requer token web.
+- `POST /api/ednai/chat`
+- `GET /api/ednai/history?session_id=partida-1`
 
-- Nunca coloque chaves no código.
-- `.env` está no `.gitignore`.
-- O cliente tenta as chaves em ordem.
-- Se uma chave bater cota, limite de taxa, indisponibilidade temporária ou erro de permissão, a próxima é usada automaticamente.
+## Cuidados De Segurança
 
-## Instalação
+- O Flask é executado com `debug=False`.
+- A chave Gemini fica somente no backend.
+- O JavaScript chama apenas rotas relativas.
+- A rota web de notícias não envia `is_fato` nem o gabarito completo.
+- A correção da versão web é feita pelo backend em `/api/partidas/<id>/responder`.
+- O resultado da versão web é calculado pelo backend ao finalizar a partida.
+- As rotas web sensíveis usam um token aleatório por partida, além do ID numérico.
+- O navegador armazena apenas `usuarioId`, `partidaId`, `token`, índice atual, total e tempo inicial em `sessionStorage`.
+- A rota de imagens usa diretório fixo e rejeita caminho com subpastas.
+- Não habilite CORS aberto, pois frontend e backend são servidos pelo mesmo Flask.
+
+## Limitações Conhecidas
+
+- O banco `SQLite` é adequado para apresentação local e túnel temporário, mas não é ideal para muitos usuários simultâneos em produção.
+- O token web protege contra troca casual de IDs, mas não substitui autenticação real de usuários.
+- O Cloudflare Quick Tunnel gera link temporário e pode mudar ao reiniciar o comando.
+- A análise do Ednai depende de chave Gemini válida, internet e disponibilidade da API.
+- A interface desktop ainda possui fallback local para notícias caso o backend esteja indisponível.
+
+## Testes Recomendados
+
+### Backend
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-## Execução
-
-Terminal 1 — backend:
-
-```bash
-venv/bin/python backend/app.py
-```
-
-Terminal 2 — interface:
-
-```bash
-venv/bin/python main.py
-```
-
-Teste rápido do backend:
-
-```bash
+python backend/app.py
 curl http://127.0.0.1:5000/api/health
 ```
 
-Resposta esperada:
+### Web
 
-```json
-{"status":"ok"}
-```
-
-## Endpoints Do Jogo
-
-### `GET /api/health`
-
-Verifica se o backend está ativo.
-
-### `GET /api/imagens/<filename>`
-
-Serve imagens do acervo.
-
-### `GET /api/noticias?temas=Ciência,Tecnologia&limite=10`
-
-Retorna notícias do acervo, embaralhadas e filtradas por tema.
-
-### `POST /api/usuarios`
-
-Cria um usuário da partida.
-
-```json
-{
-  "nome": "Maria",
-  "idade": 21,
-  "consentimento": true
-}
-```
-
-### `POST /api/partidas`
-
-Cria uma partida.
-
-```json
-{
-  "usuario_id": 1,
-  "temas": "Ciência,Tecnologia",
-  "total_questoes": 10
-}
-```
-
-### `POST /api/partidas/<id>/respostas`
-
-Registra uma resposta.
-
-```json
-{
-  "noticia_id": 3,
-  "resposta_jogador": true,
-  "acertou": false
-}
-```
-
-### `POST /api/partidas/<id>/finalizar`
-
-Finaliza a partida.
-
-```json
-{
-  "acertos": 8,
-  "duracao_segundos": 120
-}
-```
-
-### `GET /api/ranking?limite=10`
-
-Retorna o ranking.
-
-## Endpoints Do Ednai
-
-### `POST /api/ednai/analyze`
-
-Recebe o resultado corrigido pelo sistema e gera uma análise personalizada.
-
-```json
-{
-  "session_id": "partida-123",
-  "score": 8,
-  "total": 10,
-  "tempo": 120,
-  "mistakes": [],
-  "correct": []
-}
-```
-
-Resposta:
-
-```json
-{
-  "session_id": "partida-123",
-  "resposta": "..."
-}
-```
-
-### `POST /api/ednai/chat`
-
-Continua a conversa usando o histórico da sessão.
-
-```json
-{
-  "session_id": "partida-123",
-  "message": "Por que errei a notícia 4?"
-}
-```
-
-### `GET /api/ednai/history?session_id=partida-123`
-
-Retorna o histórico em memória da sessão.
-
-## RAG
-
-A base RAG fica em:
+Abra:
 
 ```text
-app/ai/knowledge/
+http://localhost:5000
 ```
 
-Para adicionar conhecimento novo:
+Valide:
 
-1. crie ou edite um arquivo `.md` nessa pasta;
-2. reinicie o backend ou faça uma nova consulta;
-3. o índice local será atualizado automaticamente se detectar mudança nos arquivos.
+- tela inicial;
+- CSS e JavaScript;
+- início de partida;
+- carregamento de notícias;
+- imagens;
+- envio de respostas;
+- feedback;
+- resultado;
+- ranking;
+- Ednai, quando a chave estiver configurada.
 
-O índice ChromaDB é gerado em runtime em `app/ai/.chroma/` e não deve ser versionado.
+### Desktop
 
-## Segurança E Privacidade
-
-- O Ednai recebe apenas dados sanitizados da partida.
-- Textos longos são truncados antes de serem enviados ao Gemini.
-- A correção do quiz não depende do Gemini.
-- O gabarito cadastrado continua sendo a fonte de verdade.
-- Chaves de API ficam exclusivamente no `.env`.
-- O histórico de conversa atual é em memória; ao reiniciar o backend, ele é perdido.
-
-## Limitações Atuais
-
-- A interface é desktop `PySide6`.
-- O backend roda localmente em `127.0.0.1:5000` por padrão.
-- A memória do Ednai não é persistida em banco.
-- O RAG usa embeddings determinísticos leves para manter baixo consumo local.
-- A qualidade da resposta depende do modelo Gemini configurado e da cota disponível.
-
-## Solução De Problemas
-
-### Porta 5000 ocupada
+Com o backend aberto:
 
 ```bash
-lsof -i :5000
-pkill -f "backend/app.py"
-venv/bin/python backend/app.py
+python main.py
 ```
 
-### Ednai não responde
+Valide:
 
-Verifique:
+- abertura da interface;
+- criação de usuário;
+- início da partida;
+- envio de respostas;
+- finalização;
+- ranking;
+- comunicação com a IA.
 
-1. backend está rodando;
-2. `.env` tem pelo menos uma chave Gemini preenchida;
-3. `GEMINI_MODEL` está em um modelo disponível para sua conta;
-4. dependências foram instaladas com `pip install -r requirements.txt`;
-5. há cota disponível nas chaves configuradas.
+### Responsividade
 
-### Testar RAG local
+Teste no modo responsivo do navegador:
+
+- `320px`;
+- `375px`;
+- `390px`;
+- `768px`.
+
+### Túnel
 
 ```bash
-venv/bin/python - <<'PY'
-from app.ai.rag import RagKnowledgeBase
-rag = RagKnowledgeBase()
-print(rag.index_documents())
-print(rag.search("como identificar fake news", limit=2))
-PY
+cloudflared tunnel --url http://localhost:5000
 ```
 
-### Testar histórico do Ednai
+Teste o link gerado:
 
-```bash
-curl "http://127.0.0.1:5000/api/ednai/history?session_id=teste"
-```
-
-## Implementação Ativa
-
-A implementação ativa do agente está concentrada em `app/ai/` e é chamada somente após a correção automática do quiz. O restante do sistema permanece responsável pelo jogo, persistência, ranking e exibição das notícias.
+- no próprio computador;
+- em celular na mesma rede;
+- em celular usando 4G/5G.

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz — ednAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/quiz.js') }}" defer></script>
+</head>
+<body>
+    <main class="page">
+        <header class="page-header">
+            <p class="phase-badge">✨ Fase 02</p>
+            <h1>Desafio de Verificação</h1>
+            <p class="subtitle">Leia cuidadosamente a postagem abaixo e decida: trata-se de um fato verídico ou uma fake news?</p>
+        </header>
+
+        <section id="quiz-app" class="quiz-layout" aria-live="polite">
+            <div class="progress-panel">
+                <div class="status-row">
+                    <span id="tempo" class="status-pill">⏱ 00:00</span>
+                    <span id="contador-curto" class="status-pill">📰 0/0</span>
+                </div>
+                <div class="status-row">
+                    <strong id="contador">Pergunta 0 de 0</strong>
+                    <span id="percentual">0% concluído</span>
+                </div>
+                <div class="progress-bar" aria-hidden="true">
+                    <span id="barra-progresso"></span>
+                </div>
+            </div>
+
+            <article class="card news-card">
+                <img id="noticia-imagem" class="news-image" src="" alt="Imagem da notícia atual">
+                <p id="noticia-fonte" class="source-line"></p>
+                <h2 id="noticia-manchete"></h2>
+                <p id="noticia-texto"></p>
+            </article>
+
+            <div id="mensagem" class="message" role="status" aria-live="polite"></div>
+
+            <div id="botoes-resposta" class="answer-grid">
+                <button id="btn-fato" class="button answer-fact" type="button">✔ É FATO</button>
+                <button id="btn-fake" class="button answer-fake" type="button">✖ É FAKE</button>
+            </div>
+
+            <section id="feedback" class="card feedback-card hidden" aria-labelledby="feedback-titulo">
+                <p class="phase-badge neutral">✨ Feedback educativo</p>
+                <h2 id="feedback-titulo"></h2>
+                <h3>💡 Por que essa decisão?</h3>
+                <p id="feedback-explicacao"></p>
+                <a id="feedback-link" class="source-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+                <button id="btn-proximo" class="button button-primary" type="button">Próxima Pergunta ➔</button>
+            </section>
+        </section>
+
+        <footer class="footer">ednAI • Introdução à Programação • UFCAT</footer>
+    </main>
+</body>
+</html>

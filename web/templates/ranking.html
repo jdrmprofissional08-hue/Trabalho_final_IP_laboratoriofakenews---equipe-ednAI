@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking — ednAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/ranking.js') }}" defer></script>
+</head>
+<body>
+    <main class="page">
+        <header class="page-header">
+            <p class="phase-badge warning">🏆 Quadro de honra</p>
+            <h1>Ranking Geral</h1>
+            <p class="subtitle">Mostra UFCAT — Atualização ao vivo</p>
+        </header>
+
+        <section class="card ranking-card" aria-labelledby="ranking-titulo">
+            <h2 id="ranking-titulo" class="sr-only">Lista de pontuações</h2>
+            <div class="ranking-header" aria-hidden="true">
+                <span>Posição</span>
+                <span>Nome</span>
+                <span>Pontuação</span>
+            </div>
+            <div id="ranking-lista" class="ranking-list" role="list"></div>
+        </section>
+
+        <div id="mensagem" class="message" role="status" aria-live="polite"></div>
+
+        <a class="button button-primary single-action" href="/">Voltar para o Início</a>
+
+        <footer class="footer">ednAI • Introdução à Programação • UFCAT</footer>
+    </main>
+</body>
+</html>
