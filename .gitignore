@@ -1,5 +1,9 @@
 .idea/
 __pycache__/
+**/__pycache__/
 *.py[cod]
 venv/
+.venv/
 backend/ednai.db
+.env
+app/ai/.chroma/

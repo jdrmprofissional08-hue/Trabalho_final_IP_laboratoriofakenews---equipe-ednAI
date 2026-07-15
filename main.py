@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import json
 import sys
 import random
 import requests
+from pathlib import Path
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
-from PySide6.QtCore import Qt, QElapsedTimer, QTimer
+from PySide6.QtCore import QElapsedTimer, QTimer, QThread, Signal
 
 from src.styles import STYLE_SHEET
 from src.ui.tela_inicial import TelaInicial
@@ -15,6 +17,8 @@ from src.ui.tela_ranking import TelaRanking
 
 BACKEND_URL = "http://127.0.0.1:5000"
 USE_BACKEND = True
+BASE_DIR = Path(__file__).resolve().parent
+LOCAL_NEWS_SEED_PATH = BASE_DIR / "backend" / "news_seed.json"
 
 TEMA_NORMALIZADO = {
     "saude": "Ciência",
@@ -29,6 +33,71 @@ TEMA_NORMALIZADO = {
 
 def _normalizar_tema(valor: str) -> str:
     return TEMA_NORMALIZADO.get(str(valor).strip().lower(), str(valor).strip())
+
+
+def carregar_perguntas_locais(temas_escolhidos, limite=10):
+    """Carrega o acervo local completo quando o backend não está disponível."""
+    perguntas = []
+    if LOCAL_NEWS_SEED_PATH.exists():
+        try:
+            with LOCAL_NEWS_SEED_PATH.open("r", encoding="utf-8") as seed_file:
+                perguntas = json.load(seed_file)
+            for pergunta in perguntas:
+                image_path = pergunta.get("image_path", "")
+                if image_path and not Path(image_path).is_absolute():
+                    pergunta["image_path"] = str(BASE_DIR / "backend" / image_path)
+        except (OSError, json.JSONDecodeError) as error:
+            print(f"Não foi possível carregar news_seed.json: {error}")
+            perguntas = []
+
+    if not perguntas:
+        perguntas = list(BANCO_PERGUNTAS)
+
+    filtradas = [
+        pergunta
+        for pergunta in perguntas
+        if _normalizar_tema(pergunta.get("tema", "")) in temas_escolhidos
+    ]
+
+    if not filtradas:
+        filtradas = list(perguntas)
+
+    random.shuffle(filtradas)
+    return filtradas[:limite]
+
+
+class EdnaiRequestWorker(QThread):
+    completed = Signal(str, object)
+    failed = Signal(str, str)
+
+    def __init__(self, request_type, url, payload=None, timeout=90, parent=None):
+        super().__init__(parent)
+        self.request_type = request_type
+        self.url = url
+        self.payload = payload or {}
+        self.timeout = timeout
+
+    def run(self):
+        try:
+            response = requests.post(
+                self.url,
+                json=self.payload,
+                timeout=self.timeout,
+            )
+            if response.status_code >= 400:
+                try:
+                    data = response.json()
+                    message = data.get("erro") or data.get("error") or response.text
+                except ValueError:
+                    message = response.text
+                self.failed.emit(self.request_type, str(message).strip())
+                return
+            response.raise_for_status()
+            self.completed.emit(self.request_type, response.json())
+        except requests.RequestException as error:
+            self.failed.emit(self.request_type, str(error))
+        except ValueError as error:
+            self.failed.emit(self.request_type, f"Resposta inválida do backend: {error}")
 
 
 # Banco de dados de perguntas locais para fallback
@@ -95,7 +164,7 @@ BANCO_PERGUNTAS = [
     }
 ]
 
-class EdnAIApp(QMainWindow):
+class FakeNewsLabApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ednAI - Laboratório de Combate a Fake News")
@@ -115,6 +184,10 @@ class EdnAIApp(QMainWindow):
         self.timer_partida.timeout.connect(self.atualizar_tempo_quiz)
         self.usuario_backend_id = None
         self.partida_backend_id = None
+        self.questoes_erradas = []
+        self.questoes_corretas = []
+        self.ednai_session_id = "ednai-local"
+        self.ednai_worker = None
         
         # Histórico do Ranking Geral (Iniciado com dados mockados)
         self.lista_ranking = []
@@ -143,6 +216,7 @@ class EdnAIApp(QMainWindow):
         self.tela_feedback.proxima_pergunta_signal.connect(self.seguir_fluxo)
         self.tela_final.jogar_novamente_signal.connect(self.voltar_inicio)
         self.tela_final.ver_ranking_signal.connect(self.mostrar_ranking)
+        self.tela_final.perguntar_ednai_signal.connect(self.perguntar_ao_ednai)
         self.tela_ranking.voltar_inicio_signal.connect(self.voltar_inicio)
         
         # Define a tela inicial como o foco padrão de abertura
@@ -161,6 +235,9 @@ class EdnAIApp(QMainWindow):
         self.respostas_corretas = 0
         self.usuario_backend_id = None
         self.partida_backend_id = None
+        self.questoes_erradas = []
+        self.questoes_corretas = []
+        self.ednai_session_id = f"ednai-{self.jogador_nome.strip().lower().replace(' ', '-') or 'local'}"
         self.cronometro_partida.restart()
         self.timer_partida.start()
 
@@ -183,13 +260,7 @@ class EdnAIApp(QMainWindow):
             except requests.RequestException as error:
                 print(f"Backend indisponível. Usando dados locais. Detalhe: {error}")
 
-        perguntas_filtradas = [q for q in BANCO_PERGUNTAS if _normalizar_tema(q["tema"]) in temas_escolhidos]
-        
-        if not perguntas_filtradas:
-            perguntas_filtradas = list(BANCO_PERGUNTAS)
-        
-        random.shuffle(perguntas_filtradas)
-        self.questoes_selecionadas = perguntas_filtradas[:10]
+        self.questoes_selecionadas = carregar_perguntas_locais(temas_escolhidos, limite=10)
         self.iniciar_quiz()
 
     def criar_partida_backend(self, temas_str):
@@ -252,6 +323,17 @@ class EdnAIApp(QMainWindow):
         
         if acertou:
             self.respostas_corretas += 1
+            correta = dict(pergunta)
+            correta["resposta_jogador"] = resposta_jogador
+            correta["is_fato"] = bool(pergunta["is_fato"])
+            correta["indice"] = self.pergunta_atual_idx + 1
+            self.questoes_corretas.append(correta)
+        else:
+            erro = dict(pergunta)
+            erro["resposta_jogador"] = resposta_jogador
+            erro["is_fato"] = bool(pergunta["is_fato"])
+            erro["indice"] = self.pergunta_atual_idx + 1
+            self.questoes_erradas.append(erro)
 
         if self.partida_backend_id:
             try:
@@ -326,7 +408,68 @@ class EdnAIApp(QMainWindow):
                 self.lista_ranking.sort(key=lambda item: (-obter_acertos(item), item.get("tempo", 0), item["nome"]))
                 
             self.stacked_widget.setCurrentWidget(self.tela_final)
-            
+            self.solicitar_analise_ednai(duracao)
+
+    def solicitar_analise_ednai(self, duracao):
+        if not USE_BACKEND:
+            return
+        payload = {
+            "session_id": self.ednai_session_id,
+            "score": self.respostas_corretas,
+            "total": len(self.questoes_selecionadas),
+            "tempo": duracao,
+            "mistakes": self.questoes_erradas,
+            "correct": self.questoes_corretas,
+        }
+        self.tela_final.exibir_ednai_carregando()
+        self._iniciar_requisicao_ednai(
+            request_type="analyze",
+            url=f"{BACKEND_URL}/api/ednai/analyze",
+            payload=payload,
+        )
+
+    def perguntar_ao_ednai(self, pergunta):
+        if not USE_BACKEND:
+            self.tela_final.exibir_ednai_erro("Backend indisponível para conversar com o Ednai.")
+            return
+        self.tela_final.exibir_ednai_pergunta_em_andamento()
+        self._iniciar_requisicao_ednai(
+            request_type="chat",
+            url=f"{BACKEND_URL}/api/ednai/chat",
+            payload={
+                "session_id": self.ednai_session_id,
+                "message": pergunta,
+            },
+        )
+
+    def _iniciar_requisicao_ednai(self, request_type, url, payload):
+        if self.ednai_worker and self.ednai_worker.isRunning():
+            return
+
+        self.ednai_worker = EdnaiRequestWorker(
+            request_type=request_type,
+            url=url,
+            payload=payload,
+            parent=self,
+        )
+        self.ednai_worker.completed.connect(self._ao_ednai_concluido)
+        self.ednai_worker.failed.connect(self._ao_ednai_falhou)
+        self.ednai_worker.finished.connect(self.ednai_worker.deleteLater)
+        self.ednai_worker.start()
+
+    def _ao_ednai_concluido(self, request_type, data):
+        self.ednai_worker = None
+        resposta = data.get("resposta", "Ednai não retornou uma resposta agora.")
+        self.tela_final.exibir_ednai_resposta(resposta)
+
+    def _ao_ednai_falhou(self, request_type, error):
+        print(f"Não foi possível consultar o Ednai: {error}")
+        self.ednai_worker = None
+        self.tela_final.exibir_ednai_erro(
+            "Ednai não conseguiu responder agora. Verifique o backend, a chave GEMINI_API_KEY "
+            "e as dependências do agente."
+        )
+
     def mostrar_ranking(self):
         """Exibe o ranking vindo do backend, com fallback local."""
         if USE_BACKEND:
@@ -349,6 +492,8 @@ class EdnAIApp(QMainWindow):
     def voltar_inicio(self):
         """Limpa as seleções antigas do formulário e retorna à identificação."""
         self.timer_partida.stop()
+        self.questoes_erradas = []
+        self.questoes_corretas = []
         self.tela_inicial.resetar_formulario()
         self.stacked_widget.setCurrentWidget(self.tela_inicial)
 
@@ -363,6 +508,6 @@ if __name__ == "__main__":
     # Aplica a identidade visual global via QSS
     app.setStyleSheet(STYLE_SHEET)
     
-    win = EdnAIApp()
+    win = FakeNewsLabApp()
     win.show()
     sys.exit(app.exec())

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+    QWidget, QVBoxLayout, QLabel, 
     QPushButton, QSpacerItem, QSizePolicy, QFrame
 )
 from PySide6.QtCore import Signal, Qt
@@ -52,8 +52,8 @@ class TelaFeedback(QWidget):
         card_layout.addWidget(lbl_exp_header)
         
         self.lbl_explicacao = QLabel(
-            "Esta notícia foi classificada como FAKE. A inteligência artificial que a gerou "
-            "cometeu alguns deslizes linguísticos e inventou fatos que não constam em bases oficiais."
+            "Esta notícia foi classificada como FAKE porque apresenta sinais de desinformação "
+            "e afirmações que não constam em fontes confiáveis."
         )
         self.lbl_explicacao.setStyleSheet("font-size: 14px; color: #1E293B; line-height: 1.5;")
         self.lbl_explicacao.setWordWrap(True)
@@ -67,7 +67,7 @@ class TelaFeedback(QWidget):
         card_layout.addWidget(line)
         
         # Fonte de verificação
-        fonte_header = QLabel("🔗 FONTE CONFIAVEL DE CHECAGEM")
+        fonte_header = QLabel("🔗 FONTE CONFIÁVEL DE CHECAGEM")
         fonte_header.setStyleSheet("font-size: 11px; font-weight: bold; color: #64748B; letter-spacing: 0.5px;")
         card_layout.addWidget(fonte_header)
         

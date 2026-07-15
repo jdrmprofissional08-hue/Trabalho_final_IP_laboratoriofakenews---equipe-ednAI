@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
+    QWidget, QVBoxLayout, QLabel, QLineEdit, 
     QPushButton, QCheckBox, QGridLayout, QSpacerItem, QSizePolicy
 )
-from PySide6.QtGui import QIntValidator, QFont
+from PySide6.QtGui import QIntValidator
 from PySide6.QtCore import Signal, Qt
 from src.ui.components import CardFrame
-from src.styles import COLOR_PRIMARY
 
 class TelaInicial(QWidget):
     # Sinal disparado quando o usuário clica em "Iniciar Laboratório" com os dados do form
@@ -28,7 +27,7 @@ class TelaInicial(QWidget):
         header_layout = QVBoxLayout()
         header_layout.setSpacing(5)
         
-        lbl_inst = QLabel("INTELIGÊNCIA ARTIFICIAL - UFCAT")
+        lbl_inst = QLabel("UFCAT")
         lbl_inst.setAlignment(Qt.AlignCenter)
         lbl_inst.setStyleSheet("font-size: 11px; font-weight: bold; color: #94A3B8; letter-spacing: 1px;")
         
@@ -38,8 +37,8 @@ class TelaInicial(QWidget):
         
         lbl_sub = QLabel(
             "Coloque seu olhar crítico à prova. As notícias neste laboratório foram\n"
-            "geradas por diferentes inteligências artificiais — sua missão é distinguir o\n"
-            "que é fato do que é fake. Ao final, veja quais IA você consegue desmascarar!"
+            "selecionadas para testar sua capacidade de distinguir o\n"
+            "que é fato do que é fake."
         )
         lbl_sub.setObjectName("SubtitleLabel")
         lbl_sub.setAlignment(Qt.AlignCenter)

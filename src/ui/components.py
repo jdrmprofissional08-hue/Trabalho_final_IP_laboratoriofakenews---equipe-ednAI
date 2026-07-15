@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QWidget, QSizePolicy
 from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPixmap
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt
 
 def apply_shadow(widget, blur=15, offset=(0, 4), opacity=20):
     """Aplica um efeito de sombra suave ao widget."""

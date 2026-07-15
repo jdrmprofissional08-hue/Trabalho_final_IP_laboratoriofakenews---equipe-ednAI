@@ -118,7 +118,7 @@ class TelaQuiz(QWidget):
         # Contexto/Descrição
         self.lbl_contexto = QLabel(
             "Texto de contexto contendo detalhes da notícia que podem dar dicas se ela "
-            "é verídica ou se é uma desinformação gerada por IA."
+            "é verídica ou se é uma desinformação."
         )
         self.lbl_contexto.setStyleSheet("font-size: 13px; color: #475569; line-height: 1.35;")
         self.lbl_contexto.setWordWrap(True)
@@ -134,12 +134,12 @@ class TelaQuiz(QWidget):
         self.btn_fato = QPushButton("✔  É FATO")
         self.btn_fato.setObjectName("btnFato")
         self.btn_fato.setCursor(Qt.PointingHandCursor)
-        self.btn_fato.clicked.connect(lambda: self.resposta_signal.emit(True))
+        self.btn_fato.clicked.connect(lambda: self._emitir_resposta(True))
         
         self.btn_fake = QPushButton("✖  É FAKE")
         self.btn_fake.setObjectName("btnFake")
         self.btn_fake.setCursor(Qt.PointingHandCursor)
-        self.btn_fake.clicked.connect(lambda: self.resposta_signal.emit(False))
+        self.btn_fake.clicked.connect(lambda: self._emitir_resposta(False))
         
         botoes_layout.addWidget(self.btn_fato)
         botoes_layout.addWidget(self.btn_fake)
@@ -156,6 +156,7 @@ class TelaQuiz(QWidget):
     def carregar_pergunta(self, pergunta_dados):
         """Atualiza a interface com os dados de uma nova pergunta."""
         self.pergunta_atual_dados = pergunta_dados
+        self.definir_botoes_resposta_habilitados(True)
         self.lbl_fonte.setText(f"{pergunta_dados.get('fonte', 'PORTAL NOTÍCIAS')} • {pergunta_dados.get('tempo', 'recentemente')}")
         self.lbl_manchete.setText(pergunta_dados.get('manchete', ''))
         self.lbl_contexto.setText(pergunta_dados.get('texto', ''))
@@ -178,3 +179,11 @@ class TelaQuiz(QWidget):
         minutos = max(0, segundos) // 60
         restante = max(0, segundos) % 60
         self.lbl_tempo.setText(f"⏱ {minutos:02d}:{restante:02d}")
+
+    def definir_botoes_resposta_habilitados(self, habilitado):
+        self.btn_fato.setEnabled(habilitado)
+        self.btn_fake.setEnabled(habilitado)
+
+    def _emitir_resposta(self, resposta):
+        self.definir_botoes_resposta_habilitados(False)
+        self.resposta_signal.emit(resposta)
