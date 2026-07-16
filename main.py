@@ -66,6 +66,15 @@ def carregar_perguntas_locais(temas_escolhidos, limite=10):
     return filtradas[:limite]
 
 
+def texto_feedback_educativo(is_fato, resposta_jogador, explicacao_padrao):
+    if resposta_jogador != is_fato:
+        if not is_fato and resposta_jogador:
+            return "Preste mais atenção na imagem, verifique os textos da notícia."
+        if is_fato and not resposta_jogador:
+            return "Cuidado pro seu olhar não te confundir."
+    return explicacao_padrao
+
+
 class EdnaiRequestWorker(QThread):
     completed = Signal(str, object)
     failed = Signal(str, str)
@@ -354,7 +363,11 @@ class FakeNewsLabApp(QMainWindow):
         # Transiciona para o feedback
         self.tela_feedback.exibir_feedback(
             acertou=acertou,
-            explicacao_texto=pergunta["explicacao"],
+            explicacao_texto=texto_feedback_educativo(
+                bool(pergunta["is_fato"]),
+                resposta_jogador,
+                pergunta["explicacao"],
+            ),
             link_texto=f"Verificação completa no {pergunta.get('fonte', 'Fonte')}",
             link_url=pergunta.get("fonte_url", "#"),
             eh_ultima=eh_ultima

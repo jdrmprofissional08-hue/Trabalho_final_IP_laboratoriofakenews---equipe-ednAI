@@ -103,9 +103,10 @@ document.addEventListener("DOMContentLoaded", () => {
             btnFake.disabled = true;
             EdnaiWeb.setMessage(
                 mensagem,
-                "Esta questão já foi respondida. Avance para a próxima ou reinicie a partida.",
+                "Esta questão já foi respondida. Avance para continuar a partida.",
                 "info",
             );
+            renderFeedback(question.feedback || {});
         } else {
             EdnaiWeb.setMessage(mensagem, "");
         }

@@ -123,6 +123,15 @@ def public_news_payload(row):
     }
 
 
+def educational_feedback(is_fato, resposta_jogador, default_explanation):
+    if resposta_jogador != is_fato:
+        if not is_fato and resposta_jogador:
+            return "Preste mais atenção na imagem, verifique os textos da notícia."
+        if is_fato and not resposta_jogador:
+            return "Cuidado pro seu olhar não te confundir."
+    return default_explanation
+
+
 def validate_name(nome):
     nome = str(nome or "").strip()
     if len(nome) < 3 or len(nome) > 80:
@@ -272,7 +281,7 @@ def get_web_question(match_id, index):
         if row:
             answered = conn.execute(
                 """
-                SELECT id
+                SELECT resposta_jogador, acertou
                   FROM respostas
                  WHERE partida_id = ? AND noticia_id = ?
                  LIMIT 1
@@ -283,6 +292,19 @@ def get_web_question(match_id, index):
         return None
     item = public_news_payload(row)
     item["respondida"] = answered is not None
+    if answered is not None:
+        item["feedback"] = {
+            "acertou": bool(answered["acertou"]),
+            "resposta_jogador": bool(answered["resposta_jogador"]),
+            "resposta_correta": bool(row["is_fato"]),
+            "explicacao": educational_feedback(
+                bool(row["is_fato"]),
+                bool(answered["resposta_jogador"]),
+                row["explicacao"],
+            ),
+            "fonte": row["fonte"],
+            "fonte_url": row["fonte_url"],
+        }
     return item
 
 
@@ -422,7 +444,7 @@ def record_web_answer(match_id, token, noticia_id, resposta_jogador):
         "acertou": acertou,
         "resposta_jogador": resposta_jogador,
         "resposta_correta": is_fato,
-        "explicacao": noticia["explicacao"],
+        "explicacao": educational_feedback(is_fato, resposta_jogador, noticia["explicacao"]),
         "fonte": noticia["fonte"],
         "fonte_url": noticia["fonte_url"],
         "acertos": int(stats["acertos"] or 0),
